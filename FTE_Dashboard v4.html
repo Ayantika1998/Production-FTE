@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTE Summary Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --navy: #0D2B6E;
+    --navy-light: #1a3a82;
+    --navy-dark: #091f52;
+    --accent: #2563EB;
+    --accent-light: #3b82f6;
+    --green: #15803d;
+    --green-bg: #dcfce7;
+    --red: #b91c1c;
+    --red-bg: #fee2e2;
+    --border: #e2e8f0;
+    --bg: #f8fafc;
+    --white: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --text-light: #94a3b8;
+    --row-hover: #f1f5f9;
+    --row-alt: #f8fafc;
+    --bold-row: #eef2ff;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.15);
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    background: var(--navy);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .header h1 {
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  /* ─── FILTERS BAR ─── */
+  .filters-bar {
+    background: var(--navy-light);
+    padding: 8px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    border-bottom: 2px solid var(--navy-dark);
+  }
+
+  .filter-pill {
+    background: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--navy);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .filter-pill:hover { background: #f0f4ff; }
+  .filter-pill .label { color: var(--text-muted); font-weight: 400; margin-right: 1px; }
+  .filter-pill .val { color: var(--navy); font-weight: 600; }
+  .filter-pill .arrow { color: var(--text-muted); font-size: 10px; }
+
+  .filter-pill.month-pill {
+    background: #dbeafe;
+    border-color: #93c5fd;
+  }
+
+  /* Month Dropdown */
+  .month-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    min-width: 180px;
+    display: none;
+  }
+  .month-dropdown.open { display: block; }
+  .month-dropdown-header {
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .month-option {
+    padding: 7px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.1s;
+  }
+  .month-option:hover { background: var(--row-hover); }
+  .month-option.selected { background: #dbeafe; color: var(--accent); font-weight: 600; }
+
+  /* ─── CONTROLS BAR ─── */
+  .controls-bar {
+    background: white;
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    box-shadow: var(--shadow);
+  }
+
+  .controls-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .controls-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 2px;
+  }
+
+  .toggle-btn {
+    padding: 5px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: white;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .toggle-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    font-weight: 600;
+  }
+
+  .separator { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+
+  .panel-btn {
+    padding: 5px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: white;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+  }
+  .panel-btn:hover { border-color: var(--accent); color: var(--accent); background: #f0f4ff; }
+  .panel-btn.active { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
+
+  .controls-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+  .action-btn {
+    padding: 5px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: white;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { border-color: var(--navy); color: var(--navy); }
+
+  .export-btn {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: white;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text-muted);
+  }
+  .export-btn:hover { background: var(--navy); color: white; border-color: var(--navy); }
+
+  /* ─── MAIN LAYOUT ─── */
+  .main-layout {
+    display: flex;
+    position: relative;
+  }
+
+  /* ─── SIDE PANEL (Rows / Columns / Advanced) ─── */
+  .side-panel {
+    width: 240px;
+    background: white;
+    border-right: 1px solid var(--border);
+    padding: 14px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    max-height: calc(100vh - 130px);
+    box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+    position: relative;
+    z-index: 200;
+  }
+  .side-panel.open { display: flex; }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 8px 4px 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .panel-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 10px 4px 4px;
+    margin-top: 4px;
+  }
+  .panel-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .panel-item:hover { background: var(--row-hover); }
+  .panel-item input[type="checkbox"] {
+    width: 13px;
+    height: 13px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .panel-item label {
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* Advanced Analysis Panel */
+  .adv-panel {
+    width: 300px;
+    background: white;
+    border-right: 1px solid var(--border);
+    padding: 16px;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    max-height: calc(100vh - 130px);
+    box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+    position: relative;
+    z-index: 200;
+  }
+  .adv-panel.open { display: flex; }
+  .adv-title { font-size: 14px; font-weight: 700; color: var(--navy); }
+  .adv-subtitle { font-size: 11px; color: var(--text-muted); margin-top: -8px; }
+  .adv-tag {
+    display: inline-block;
+    background: #dbeafe;
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-top: -4px;
+  }
+  .adv-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin-bottom: 4px;
+  }
+  .adv-row { display: flex; gap: 8px; }
+  .adv-col { flex: 1; }
+  .adv-col label { font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 3px; }
+  .adv-col select, .adv-col input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--text);
+    background: white;
+  }
+  .adv-col input::placeholder { color: var(--text-light); }
+  .adv-radio-group { display: flex; flex-direction: column; gap: 6px; }
+  .adv-radio {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .adv-radio:hover { border-color: var(--accent); background: #f0f4ff; }
+  .adv-radio.selected { border-color: var(--accent); background: #eff6ff; }
+  .adv-radio input { accent-color: var(--accent); }
+  .adv-radio label { font-size: 12px; cursor: pointer; }
+  .adv-filter-group { border: 1px solid var(--border); border-radius: 6px; padding: 10px; }
+  .adv-btn-row { display: flex; gap: 8px; margin-top: 4px; }
+  .adv-apply {
+    flex: 1; padding: 7px; background: var(--accent); color: white;
+    border: none; border-radius: 4px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .adv-apply:hover { background: var(--navy); }
+  .adv-clear {
+    flex: 1; padding: 7px; background: white; color: var(--text-muted);
+    border: 1px solid var(--border); border-radius: 4px; font-size: 12px;
+    font-weight: 500; cursor: pointer; transition: all 0.15s;
+  }
+  .adv-clear:hover { border-color: var(--red); color: var(--red); }
+
+  /* ─── TABLE AREA ─── */
+  .table-area {
+    flex: 1;
+    overflow: auto;
+    max-height: calc(100vh - 130px);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+
+  thead th {
+    background: var(--navy);
+    color: white;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+  }
+  thead th:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background: var(--navy);
+  }
+
+  .th-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .th-top {
+    background: var(--navy);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 7px 14px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    letter-spacing: 0.3px;
+  }
+  .th-top.accent { background: #1a3a82; }
+  .th-sub {
+    display: flex;
+  }
+  .th-sub-cell {
+    flex: 1;
+    padding: 5px 14px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.75);
+    text-align: right;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    white-space: nowrap;
+  }
+  .th-sub-cell:last-child { border-right: none; }
+
+  td {
+    padding: 7px 14px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+    white-space: nowrap;
+    color: var(--text);
+  }
+  td:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 5;
+    border-right: 2px solid var(--border);
+    min-width: 220px;
+    max-width: 280px;
+  }
+
+  tr:hover td { background: var(--row-hover); }
+  tr:hover td:first-child { background: var(--row-hover); }
+  tr:nth-child(even) td { background: var(--row-alt); }
+  tr:nth-child(even):hover td { background: var(--row-hover); }
+  tr:nth-child(even) td:first-child { background: var(--row-alt); }
+  tr:nth-child(even):hover td:first-child { background: var(--row-hover); }
+
+  tr.bold-row td {
+    background: var(--bold-row) !important;
+    font-weight: 700;
+    color: var(--navy);
+    border-top: 1px solid #c7d2fe;
+  }
+  tr.bold-row td:first-child { background: var(--bold-row) !important; }
+
+  tr.section-row td {
+    background: #f1f5f9 !important;
+    font-weight: 600;
+    color: var(--navy);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 5px 14px;
+    border-top: 2px solid var(--border);
+  }
+  tr.section-row td:first-child { background: #f1f5f9 !important; }
+
+  .expandable { cursor: pointer; user-select: none; }
+  .expand-icon { color: var(--accent); font-weight: 700; margin-right: 4px; font-size: 13px; }
+  .indent-1 { padding-left: 28px !important; }
+  .indent-2 { padding-left: 44px !important; }
+
+  /* Number formatting */
+  .num { font-variant-numeric: tabular-nums; }
+  .pos { color: var(--green); font-weight: 600; }
+  .neg { color: var(--red); font-weight: 600; }
+  .neutral { color: var(--text); }
+  .em-dash { color: var(--text-light); }
+
+  /* Column borders */
+  td.col-border-left { border-left: 1px solid #c7d2fe; }
+  th.col-border-left { border-left: 1px solid rgba(255,255,255,0.2) !important; }
+
+  /* Trend columns */
+  .trend-col { min-width: 80px; }
+
+  /* ─── OVERLAY ─── */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+  }
+  .overlay.open { display: block; }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #f1f5f9; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="white" opacity="0.9"/><rect x="14" y="3" width="7" height="7" rx="1" fill="white" opacity="0.6"/><rect x="3" y="14" width="7" height="7" rx="1" fill="white" opacity="0.6"/><rect x="14" y="14" width="7" height="7" rx="1" fill="white" opacity="0.9"/></svg>
+  <h1>FTE Summary Dashboard</h1>
+</div>
+
+<!-- FILTERS BAR -->
+<div class="filters-bar">
+  <!-- Month Picker -->
+  <div class="filter-pill month-pill" id="monthPill" onclick="toggleMonthDropdown(event)">
+    <span class="label">Month</span>
+    <span class="val" id="monthVal">Mar-2026</span>
+    <span class="arrow">▼</span>
+    <div class="month-dropdown" id="monthDropdown">
+      <div class="month-dropdown-header">Select Month</div>
+      <div class="month-option" onclick="selectMonth('Jan-2026',event)">Jan-2026</div>
+      <div class="month-option" onclick="selectMonth('Feb-2026',event)">Feb-2026</div>
+      <div class="month-option selected" onclick="selectMonth('Mar-2026',event)">Mar-2026</div>
+      <div class="month-option" onclick="selectMonth('Apr-2026',event)">Apr-2026</div>
+      <div class="month-option" onclick="selectMonth('May-2026',event)">May-2026</div>
+      <div class="month-option" onclick="selectMonth('Jun-2026',event)">Jun-2026</div>
+    </div>
+  </div>
+
+  <div class="filter-pill"><span class="label">Markets</span><span class="val">All</span><span class="arrow">▼</span></div>
+  <div class="filter-pill"><span class="label">Market Unit</span><span class="val">All</span><span class="arrow">▼</span></div>
+  <div class="filter-pill"><span class="label">Business Unit</span><span class="val">All</span><span class="arrow">▼</span></div>
+  <div class="filter-pill"><span class="label">Parent Customer</span><span class="val">All</span><span class="arrow">▼</span></div>
+  <div class="filter-pill"><span class="label">Onsite Offshore</span><span class="val">All</span><span class="arrow">▼</span></div>
+  <div class="filter-pill"><span class="label">Associate Billability</span><span class="val">All</span><span class="arrow">▼</span></div>
+  <div class="filter-pill"><span class="label">Project Billability</span><span class="val">All</span><span class="arrow">▼</span></div>
+  <div class="filter-pill"><span class="label">Primary Reason</span><span class="val">All</span><span class="arrow">▼</span></div>
+  <div class="filter-pill"><span class="label">Project Type</span><span class="val">All</span><span class="arrow">▼</span></div>
+  <div class="filter-pill"><span class="label">Service Line</span><span class="val">All</span><span class="arrow">▼</span></div>
+  <div class="filter-pill"><span class="label">Practice Area</span><span class="val">All</span><span class="arrow">▼</span></div>
+  <div class="filter-pill"><span class="label">Practice Name</span><span class="val">All</span><span class="arrow">▼</span></div>
+</div>
+
+<!-- CONTROLS BAR -->
+<div class="controls-bar">
+  <!-- View -->
+  <div class="controls-group">
+    <span class="controls-label">View</span>
+    <button class="toggle-btn active" id="btnComparative" onclick="setView('comparative')">Comparative</button>
+    <button class="toggle-btn" id="btnTrend" onclick="setView('trend')">Trend</button>
+  </div>
+
+  <div class="separator"></div>
+
+  <!-- Period -->
+  <div class="controls-group">
+    <span class="controls-label">Period</span>
+    <button class="toggle-btn active" id="btnMonthly" onclick="setPeriod('monthly')">Monthly</button>
+    <button class="toggle-btn" id="btnQuarterly" onclick="setPeriod('quarterly')">Quarterly</button>
+    <button class="toggle-btn" id="btnYear" onclick="setPeriod('year')">Year</button>
+  </div>
+
+  <div class="separator"></div>
+
+  <!-- Rows / Columns -->
+  <button class="panel-btn" id="btnRows" onclick="togglePanel('rows')">
+    <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    Rows
+  </button>
+  <button class="panel-btn" id="btnCols" onclick="togglePanel('cols')">
+    <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M6 3v18M12 3v18M18 3v18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    Columns
+  </button>
+
+  <!-- Right Controls -->
+  <div class="controls-right">
+    <button class="action-btn" id="btnAdv" onclick="togglePanel('adv')">
+      ⚠ Advanced Analysis
+    </button>
+    <button class="action-btn" id="btnAbbr" onclick="toggleAbbr()">Abbreviate</button>
+    <button class="action-btn" onclick="resetAll()">Reset</button>
+    <button class="export-btn" onclick="exportCSV()">CSV</button>
+    <button class="export-btn" onclick="exportExcel()">Excel</button>
+  </div>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeAllPanels()"></div>
+
+<!-- MAIN LAYOUT -->
+<div class="main-layout">
+
+  <!-- ROWS PANEL -->
+  <div class="side-panel" id="rowsPanel">
+    <div class="panel-title">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Select dimensions for rows
+    </div>
+    <div class="panel-section-label">ORGANIZATION</div>
+    <div class="panel-item"><input type="checkbox" id="r_market" checked onchange="updateTable()"><label for="r_market">Market</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_mu" onchange="updateTable()"><label for="r_mu">Market Unit</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_bu" onchange="updateTable()"><label for="r_bu">Business Unit</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_sbu1" onchange="updateTable()"><label for="r_sbu1">SBU1</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_sbu2" onchange="updateTable()"><label for="r_sbu2">SBU2</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_vert" onchange="updateTable()"><label for="r_vert">Vertical</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_subv" onchange="updateTable()"><label for="r_subv">Sub Vertical</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_pc" onchange="updateTable()"><label for="r_pc">Parent Customer</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_cust" onchange="updateTable()"><label for="r_cust">Customer</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_prod" onchange="updateTable()"><label for="r_prod">Product</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_proj" onchange="updateTable()"><label for="r_proj">Project</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_bill" onchange="updateTable()"><label for="r_bill">BillType</label></div>
+    <div class="panel-section-label">CHART OF ACCOUNTS</div>
+    <div class="panel-item"><input type="checkbox" id="r_mhdg" onchange="updateTable()"><label for="r_mhdg">Mid Head Descr Group</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_mh" onchange="updateTable()"><label for="r_mh">Mid Head</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_sh" onchange="updateTable()"><label for="r_sh">Sub Head</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_acc" onchange="updateTable()"><label for="r_acc">Account</label></div>
+    <div class="panel-section-label">PIVOT ATTRIBUTES</div>
+    <div class="panel-item"><input type="checkbox" id="r_acch" checked onchange="updateTable()"><label for="r_acch">Acct Head</label></div>
+    <div class="panel-item"><input type="checkbox" id="r_time" onchange="updateTable()"><label for="r_time">Time</label></div>
+  </div>
+
+  <!-- COLUMNS PANEL -->
+  <div class="side-panel" id="colsPanel">
+    <div class="panel-title">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M6 3v18M12 3v18M18 3v18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Select dimensions for columns
+    </div>
+    <div class="panel-section-label">ORGANIZATION</div>
+    <div class="panel-item"><input type="checkbox" id="c_market"><label for="c_market">Market</label></div>
+    <div class="panel-item"><input type="checkbox" id="c_psl"><label for="c_psl">Product ServiceLine</label></div>
+    <div class="panel-item"><input type="checkbox" id="c_billid"><label for="c_billid">BillType ID</label></div>
+    <div class="panel-section-label">PIVOT ATTRIBUTES</div>
+    <div class="panel-item"><input type="checkbox" id="c_acch" checked><label for="c_acch">Acct Head</label></div>
+    <div class="panel-item"><input type="checkbox" id="c_time"><label for="c_time">Time</label></div>
+  </div>
+
+  <!-- ADVANCED ANALYSIS PANEL -->
+  <div class="adv-panel" id="advPanel">
+    <div class="adv-title">Advanced Analysis</div>
+    <div class="adv-subtitle">Filter by actual value or year-over-year variance</div>
+    <div class="adv-tag">Comparative: Current vs Prior Month</div>
+
+    <div>
+      <div class="adv-section-label">COMPARISON PERIOD</div>
+      <div class="adv-row">
+        <div class="adv-col">
+          <label>Current Year</label>
+          <select><option>2026</option><option>2025</option></select>
+        </div>
+        <div class="adv-col">
+          <label>Compare Month</label>
+          <select><option>Feb-2026</option><option>Jan-2026</option><option>Mar-2025</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="adv-section-label">ACCOUNT HEAD</div>
+      <div class="adv-radio-group">
+        <div class="adv-radio selected"><input type="radio" name="acctHead" checked id="ah1"><label for="ah1">Billed FTE</label></div>
+        <div class="adv-radio"><input type="radio" name="acctHead" id="ah2"><label for="ah2">Unbilled FTE</label></div>
+        <div class="adv-radio"><input type="radio" name="acctHead" id="ah3"><label for="ah3">Total FTE</label></div>
+        <div class="adv-radio"><input type="radio" name="acctHead" id="ah4"><label for="ah4">Utilization %</label></div>
+        <div class="adv-radio"><input type="radio" name="acctHead" id="ah5"><label for="ah5">Bench FTE</label></div>
+      </div>
+    </div>
+
+    <div class="adv-filter-group">
+      <div class="adv-section-label">VARIANCE % FILTER</div>
+      <div class="adv-row">
+        <div class="adv-col"><label>MIN % (blank = no min)</label><input type="number" placeholder="e.g. -50"></div>
+        <div class="adv-col"><label>MAX % (blank = no max)</label><input type="number" placeholder="e.g. 50"></div>
+      </div>
+    </div>
+
+    <div class="adv-filter-group">
+      <div class="adv-section-label">VARIANCE FILTER</div>
+      <div class="adv-row">
+        <div class="adv-col"><label>MIN (blank = no min)</label><input type="number" placeholder="e.g. -100"></div>
+        <div class="adv-col"><label>MAX (blank = no max)</label><input type="number" placeholder="e.g. 100"></div>
+      </div>
+    </div>
+
+    <div class="adv-filter-group">
+      <div class="adv-section-label">ACTUAL VALUE FILTER</div>
+      <div class="adv-row">
+        <div class="adv-col"><label>MIN (blank = no min)</label><input type="number" placeholder="e.g. 0"></div>
+        <div class="adv-col"><label>MAX (blank = no max)</label><input type="number" placeholder="e.g. 100"></div>
+      </div>
+    </div>
+
+    <div class="adv-btn-row">
+      <button class="adv-apply">Apply</button>
+      <button class="adv-clear">Clear</button>
+    </div>
+  </div>
+
+  <!-- TABLE AREA -->
+  <div class="table-area" id="tableArea">
+    <table id="mainTable">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───
+let currentView = 'comparative';
+let currentPeriod = 'monthly';
+let currentMonth = 'Mar-2026';
+let abbreviated = false;
+
+// ─── DIMENSION BREAKDOWN DATA ───
+// For each dimension, simulated member values with split factors (must sum to 1.0 per metric)
+const dimMembers = {
+  'Market':            ['Americas','EMEA','APJ'],
+  'Market Unit':       ['US','UK','Europe','ANZ'],
+  'Business Unit':     ['BU-North','BU-South','BU-East','BU-West'],
+  'SBU1':              ['SBU-Digital','SBU-Cloud','SBU-Data'],
+  'SBU2':              ['SBU2-A','SBU2-B','SBU2-C'],
+  'Vertical':          ['BFSI','Healthcare','Manufacturing','Retail'],
+  'Sub Vertical':      ['Banking','Insurance','Pharma','Auto'],
+  'Parent Customer':   ['Client-Alpha','Client-Beta','Client-Gamma'],
+  'Customer':          ['Cust-001','Cust-002','Cust-003','Cust-004'],
+  'Product':           ['ADM','BPS','Digital','Engineering'],
+  'Project':           ['Proj-A','Proj-B','Proj-C'],
+  'BillType':          ['T&M','Fixed Price','Managed Services'],
+  'Mid Head Descr Group': ['Revenue','Cost','Margin'],
+  'Mid Head':          ['Direct','Indirect'],
+  'Sub Head':          ['Onsite','Offshore'],
+  'Account':           ['Acc-101','Acc-102','Acc-103'],
+  'Acct Head':         null, // no breakdown — shows flat metric rows
+  'Time':              null,
+};
+
+// Simulated split weights per dimension member (non-pct metrics get proportional split, pct gets slight variation)
+const dimSplits = {
+  'Market':         { 'Americas':[0.45,0.44,0.46,0.45,0.44,0.45,0.45,0.45,0.45,0.45,0.45,0.45,0.45,0.45,0.45,0.45,0.45,0.45],
+                      'EMEA':     [0.35,0.36,0.34,0.35,0.36,0.35,0.35,0.35,0.35,0.35,0.35,0.35,0.35,0.35,0.35,0.35,0.35,0.35],
+                      'APJ':      [0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20] },
+  'Market Unit':    { 'US':      [0.38,0.37,0.38,0.38,0.37,0.38,0.38,0.38,0.38,0.38,0.38,0.38,0.38,0.38,0.38,0.38,0.38,0.38],
+                      'UK':      [0.22,0.23,0.22,0.22,0.23,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22],
+                      'Europe':  [0.25,0.25,0.24,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25],
+                      'ANZ':     [0.15,0.15,0.16,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15] },
+  'Business Unit':  { 'BU-North':[0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30],
+                      'BU-South':[0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28],
+                      'BU-East': [0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22,0.22],
+                      'BU-West': [0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20] },
+  'BillType':       { 'T&M':             [0.55,0.54,0.55,0.55,0.54,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55,0.55],
+                      'Fixed Price':      [0.30,0.31,0.30,0.30,0.31,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30],
+                      'Managed Services': [0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15] },
+};
+
+// Slight % variance per member for isPct metrics
+const pctOffset = {
+  'Market':        {'Americas':+1.2,'EMEA':-0.5,'APJ':-0.8},
+  'Market Unit':   {'US':+1.5,'UK':+0.3,'Europe':-0.8,'ANZ':-1.2},
+  'Business Unit': {'BU-North':+1.0,'BU-South':+0.4,'BU-East':-0.6,'BU-West':-1.1},
+  'BillType':      {'T&M':+1.2,'Fixed Price':-0.3,'Managed Services':-1.4},
+};
+
+// ─── MASTER DATA ───
+const masterData = [
+  { label: 'Billed FTE',             type: 'bold',       indent: 0,
+    m_act: 12845, m_pri: 12302,  q_act: 37647, q_pri: 36100,  y_act: 75200, y_pri: 71800 },
+  { label: '+ Onsite Billed FTE',    type: 'expandable', indent: 1,
+    m_act: 5420,  m_pri: 5180,   q_act: 15900, q_pri: 15200,  y_act: 31800, y_pri: 30100 },
+  { label: 'Offshore Billed FTE',    type: 'normal',     indent: 2,
+    m_act: 7425,  m_pri: 7122,   q_act: 21747, q_pri: 20900,  y_act: 43400, y_pri: 41700 },
+  { label: 'Unbilled FTE',           type: 'bold',       indent: 0,
+    m_act: 1834,  m_pri: 2147,   q_act: 5850,  q_pri: 6400,   y_act: 11500, y_pri: 13200 },
+  { label: '+ Bench FTE',            type: 'expandable', indent: 1,
+    m_act: 1124,  m_pri: 1389,   q_act: 3600,  q_pri: 4100,   y_act: 7100,  y_pri: 8200  },
+  { label: 'Training FTE',           type: 'normal',     indent: 2,
+    m_act: 415,   m_pri: 472,    q_act: 1320,  q_pri: 1430,   y_act: 2600,  y_pri: 2900  },
+  { label: 'Buffer FTE',             type: 'normal',     indent: 2,
+    m_act: 295,   m_pri: 286,    q_act: 930,   q_pri: 870,    y_act: 1800,  y_pri: 1700  },
+  { label: 'Total FTE',              type: 'bold',       indent: 0,
+    m_act: 14679, m_pri: 14449,  q_act: 43497, q_pri: 42500,  y_act: 86700, y_pri: 85000 },
+  { label: 'Utilization %',          type: 'bold',       indent: 0, isPct: true,
+    m_act: 87.5,  m_pri: 85.2,   q_act: 86.6,  q_pri: 84.9,   y_act: 86.7,  y_pri: 84.5  },
+  { label: '+ Onsite Utilization %', type: 'expandable', indent: 1, isPct: true,
+    m_act: 85.3,  m_pri: 83.1,   q_act: 84.5,  q_pri: 82.8,   y_act: 84.9,  y_pri: 82.3  },
+  { label: 'Offshore Utilization %', type: 'normal',     indent: 2, isPct: true,
+    m_act: 89.1,  m_pri: 86.8,   q_act: 88.2,  q_pri: 86.5,   y_act: 88.0,  y_pri: 86.1  },
+  { label: 'Headcount',              type: 'section',    indent: 0 },
+  { label: 'Active Headcount',       type: 'bold',       indent: 0,
+    m_act: 14920, m_pri: 14700,  q_act: 44500, q_pri: 43800,  y_act: 88200, y_pri: 86900 },
+  { label: '+ Permanent HC',         type: 'expandable', indent: 1,
+    m_act: 13245, m_pri: 13010,  q_act: 39500, q_pri: 38800,  y_act: 78500, y_pri: 77200 },
+  { label: 'Contract HC',            type: 'normal',     indent: 2,
+    m_act: 1675,  m_pri: 1690,   q_act: 5000,  q_pri: 5000,   y_act: 9700,  y_pri: 9700  },
+  { label: 'Attrition %',            type: 'normal',     indent: 0, isPct: true,
+    m_act: 12.4,  m_pri: 13.1,   q_act: 12.8,  q_pri: 13.5,   y_act: 13.1,  y_pri: 14.2  },
+  { label: 'Joining Count',          type: 'normal',     indent: 0,
+    m_act: 245,   m_pri: 198,    q_act: 660,   q_pri: 610,    y_act: 1280,  y_pri: 1200  },
+  { label: 'Leaving Count',          type: 'normal',     indent: 0,
+    m_act: 155,   m_pri: 210,    q_act: 490,   q_pri: 620,    y_act: 980,   y_pri: 1220  },
+];
+
+// ─── TREND DATA ───
+const trendMonths = ['Jan-26','Feb-26','Mar-26','Apr-26','May-26','Jun-26','Jul-26','Aug-26','Sep-26','Oct-26','Nov-26','Dec-26'];
+const trendQuarters = ['Q1-26','Q2-26','Q3-26','Q4-26'];
+const trendData = {
+  'Billed FTE':       [11800,12100,12302,12510,12845,null,null,null,null,null,null,null],
+  'Unbilled FTE':     [2300, 2200, 2147, 2010, 1834, null,null,null,null,null,null,null],
+  'Total FTE':        [14100,14300,14449,14520,14679,null,null,null,null,null,null,null],
+  'Utilization %':    [83.7, 84.1, 85.2, 86.0, 87.5, null,null,null,null,null,null,null],
+  'Bench FTE':        [1480, 1420, 1389, 1250, 1124, null,null,null,null,null,null,null],
+  'Active Headcount': [14300,14500,14700,14800,14920,null,null,null,null,null,null,null],
+  'Attrition %':      [14.2, 13.8, 13.1, 12.8, 12.4, null,null,null,null,null,null,null],
+  'Joining Count':    [180,  210,  198,  220,  245,  null,null,null,null,null,null,null],
+  'Leaving Count':    [230,  195,  210,  180,  155,  null,null,null,null,null,null,null],
+};
+const trendDataQ = {
+  'Billed FTE':       [12067,12618,null,null],
+  'Unbilled FTE':     [2216, 1930, null,null],
+  'Total FTE':        [14283,14573,null,null],
+  'Utilization %':    [84.3, 86.5, null,null],
+  'Bench FTE':        [1430, 1187, null,null],
+  'Active Headcount': [14500,14807,null,null],
+  'Attrition %':      [13.7, 12.6, null,null],
+  'Joining Count':    [588,  665,  null,null],
+  'Leaving Count':    [635,  335,  null,null],
+};
+
+// ─── DIM MAPS ───
+const rowDimMap = {
+  r_market:'Market', r_mu:'Market Unit', r_bu:'Business Unit',
+  r_sbu1:'SBU1', r_sbu2:'SBU2', r_vert:'Vertical', r_subv:'Sub Vertical',
+  r_pc:'Parent Customer', r_cust:'Customer', r_prod:'Product',
+  r_proj:'Project', r_bill:'BillType',
+  r_mhdg:'Mid Head Descr Group', r_mh:'Mid Head', r_sh:'Sub Head', r_acc:'Account',
+  r_acch:'Acct Head', r_time:'Time'
+};
+const colDimMap = {
+  c_market:'Market', c_psl:'Product ServiceLine',
+  c_billid:'BillType ID', c_acch:'Acct Head', c_time:'Time'
+};
+
+function getSelectedRowDims() {
+  return Object.keys(rowDimMap)
+    .filter(id => { const el=document.getElementById(id); return el&&el.checked; })
+    .map(id => rowDimMap[id]);
+}
+function getRowHeader() {
+  const s = getSelectedRowDims();
+  return s.length ? s.join(' / ') : 'Acct Head';
+}
+
+// ─── PERIOD HELPERS ───
+function getActualPrior(row) {
+  if (currentPeriod==='quarterly') return { actual:row.q_act, prior:row.q_pri };
+  if (currentPeriod==='year')      return { actual:row.y_act, prior:row.y_pri };
+  return { actual:row.m_act, prior:row.m_pri };
+}
+function getPeriodLabel() {
+  if (currentPeriod==='quarterly') {
+    return ['Jan-2026','Feb-2026','Mar-2026'].includes(currentMonth)?'Q1-2026':'Q2-2026';
+  }
+  if (currentPeriod==='year') return 'FY-2026';
+  return currentMonth;
+}
+function getPriorLabel() {
+  if (currentPeriod==='quarterly') return getPeriodLabel()==='Q1-2026'?'Q4-2025':'Q1-2026';
+  if (currentPeriod==='year') return 'FY-2025';
+  return (monthMap[currentMonth]||monthMap['Mar-2026']).prior;
+}
+
+// ─── SPLIT VALUE BY DIMENSION ───
+// Returns array of { member, actual, prior } for a given metric row and dimension
+function splitByDim(row, dimName) {
+  const members = dimMembers[dimName];
+  if (!members) return null;
+  const { actual, prior } = getActualPrior(row);
+  const splits = dimSplits[dimName];
+  const offsets = pctOffset[dimName] || {};
+  const rowIdx = masterData.indexOf(row);
+
+  return members.map((member, mi) => {
+    let w = splits && splits[member] ? (splits[member][rowIdx] || (1/members.length)) : (1/members.length);
+    let mAct, mPri;
+    if (row.isPct) {
+      const off = offsets[member] || (mi===0?+1.0: mi===members.length-1?-0.8:0);
+      mAct = +(actual + off).toFixed(1);
+      mPri = +(prior  + off*0.8).toFixed(1);
+    } else {
+      mAct = Math.round(actual * w);
+      mPri = Math.round(prior  * w);
+    }
+    return { member, actual:mAct, prior:mPri };
+  });
+}
+
+// ─── TREND HELPERS ───
+const monthMap = {
+  'Jan-2026':{prior:'Dec-2025'},'Feb-2026':{prior:'Jan-2026'},
+  'Mar-2026':{prior:'Feb-2026'},'Apr-2026':{prior:'Mar-2026'},
+  'May-2026':{prior:'Apr-2026'},'Jun-2026':{prior:'May-2026'},
+};
+function getVisibleTrendCols() {
+  if (currentPeriod==='year') return ['FY-2026'];
+  if (currentPeriod==='quarterly') {
+    const end=['Jan-2026','Feb-2026','Mar-2026'].includes(currentMonth)?0:1;
+    return trendQuarters.slice(0,end+1);
+  }
+  const idx={'Jan-2026':0,'Feb-2026':1,'Mar-2026':2,'Apr-2026':3,'May-2026':4,'Jun-2026':5};
+  return trendMonths.slice(0,(idx[currentMonth]??2)+1);
+}
+function getTrendVal(label, i) {
+  if (currentPeriod==='year') {
+    const vals=(trendData[label]||[]).filter(v=>v!==null);
+    if (!vals.length) return null;
+    const row=masterData.find(r=>r.label===label);
+    return row&&row.isPct ? vals.reduce((a,b)=>a+b,0)/vals.length : vals.reduce((a,b)=>a+b,0);
+  }
+  if (currentPeriod==='quarterly') return trendDataQ[label]?.[i]??null;
+  return trendData[label]?.[i]??null;
+}
+function getTrendValSplit(label, colIdx, dimName, member) {
+  const base = getTrendVal(label, colIdx);
+  if (base===null) return null;
+  const row = masterData.find(r=>r.label===label);
+  if (!row) return null;
+  const splits = dimSplits[dimName];
+  const offsets = pctOffset[dimName]||{};
+  const rowIdx = masterData.indexOf(row);
+  if (row.isPct) {
+    const off = (offsets[member]||0);
+    return +(base + off).toFixed(1);
+  }
+  const members = dimMembers[dimName]||[];
+  const mi = members.indexOf(member);
+  const w = splits&&splits[member] ? (splits[member][rowIdx]||(1/members.length)) : (1/members.length);
+  return Math.round(base * w);
+}
+
+// ─── FORMATTING ───
+function fmt(val, isPct) {
+  if (val===null||val===undefined||val===0) return '<span class="em-dash num">—</span>';
+  if (isPct) {
+    const s=Math.abs(val).toFixed(1)+'%';
+    return val<0?`<span class="num neg">(${s})</span>`:`<span class="num">${s}</span>`;
+  }
+  const abs=Math.abs(val);
+  const s=abbreviated?fmtAbbr(abs):abs.toLocaleString('en-US');
+  return val<0?`<span class="num neg">(${s})</span>`:`<span class="num">${s}</span>`;
+}
+function fmtAbbr(val){return val>=1000?(val/1000).toFixed(1)+'K':val.toString();}
+function fmtVar(val,isPct){
+  if(val===null||val===undefined||val===0) return '<span class="em-dash num">—</span>';
+  const abs=Math.abs(val);
+  if(isPct){const s=abs.toFixed(1)+'%';return val>0?`<span class="num pos">▲${s}</span>`:`<span class="num neg">▼(${s})</span>`;}
+  const s=abbreviated?fmtAbbr(abs):abs.toLocaleString('en-US');
+  return val>0?`<span class="num pos">▲${s}</span>`:`<span class="num neg">▼(${s})</span>`;
+}
+function fmtVarPct(actual,prior){
+  if(!prior) return '<span class="em-dash num">—</span>';
+  const pct=((actual-prior)/Math.abs(prior))*100;
+  const s=Math.abs(pct).toFixed(1)+'%';
+  return pct>0?`<span class="num pos">▲${s}</span>`:`<span class="num neg">▼(${s})</span>`;
+}
+
+// ─── RENDER ───
+function renderTable() {
+  const thead = document.getElementById('tableHead');
+  const tbody = document.getElementById('tableBody');
+  const dims   = getSelectedRowDims();
+  // First non-Acct-Head, non-Time dimension drives the grouping
+  const breakDim = dims.find(d => d !== 'Acct Head' && d !== 'Time' && dimMembers[d]);
+  const rowHeader = getRowHeader();
+  const pLabel = getPeriodLabel();
+  const prLabel = getPriorLabel();
+
+  if (currentView === 'comparative') {
+    thead.innerHTML = `<tr>
+      <th rowspan="2" style="min-width:240px;text-align:left;padding:10px 14px;vertical-align:middle;">${rowHeader}</th>
+      <th colspan="1"><div class="th-top">${pLabel}</div><div class="th-sub"><div class="th-sub-cell">ACTUAL</div></div></th>
+      <th colspan="3" class="col-border-left">
+        <div class="th-top accent">${pLabel} vs ${prLabel}</div>
+        <div class="th-sub">
+          <div class="th-sub-cell">PRIOR</div><div class="th-sub-cell">VAR</div><div class="th-sub-cell">VAR%</div>
+        </div>
+      </th></tr>`;
+
+    let rows = '';
+
+    if (!breakDim) {
+      // ── No breakdown dim selected — flat metric rows ──
+      masterData.forEach(row => {
+        if (row.type==='section') { rows+=`<tr class="section-row"><td colspan="5">${row.label}</td></tr>`; return; }
+        const {actual,prior}=getActualPrior(row);
+        rows += buildComparativeRow(row.label, row.type, row.indent, row.isPct, actual, prior);
+      });
+    } else {
+      // ── Breakdown by selected dimension ──
+      const members = dimMembers[breakDim];
+      members.forEach(member => {
+        // Member header row (acts as section divider)
+        rows += `<tr class="section-row"><td colspan="5">${breakDim}: ${member}</td></tr>`;
+        masterData.forEach(row => {
+          if (row.type==='section') { rows+=`<tr class="section-row"><td colspan="5" style="padding-left:28px;font-size:10.5px;">${row.label}</td></tr>`; return; }
+          const split = splitByDim(row, breakDim);
+          const s = split ? split.find(x=>x.member===member) : null;
+          const actual = s ? s.actual : null;
+          const prior  = s ? s.prior  : null;
+          rows += buildComparativeRow(row.label, row.type, row.indent, row.isPct, actual, prior);
+        });
+      });
+    }
+    tbody.innerHTML = rows;
+
+  } else {
+    // ── TREND ──
+    const cols = getVisibleTrendCols();
+    const headerCols = cols.map(m =>
+      `<th class="trend-col"><div class="th-top" style="font-size:10px">${m}</div><div class="th-sub"><div class="th-sub-cell">ACTUAL</div></div></th>`
+    ).join('');
+    thead.innerHTML = `<tr><th style="min-width:240px;text-align:left;padding:10px 14px;">${rowHeader}</th>${headerCols}</tr>`;
+
+    let rows = '';
+
+    if (!breakDim) {
+      masterData.forEach(row => {
+        if (row.type==='section') { rows+=`<tr class="section-row"><td colspan="${cols.length+1}">${row.label}</td></tr>`; return; }
+        rows += buildTrendRow(row.label, row.type, row.indent, row.isPct, cols);
+      });
+    } else {
+      const members = dimMembers[breakDim];
+      members.forEach(member => {
+        rows += `<tr class="section-row"><td colspan="${cols.length+1}">${breakDim}: ${member}</td></tr>`;
+        masterData.forEach(row => {
+          if (row.type==='section') { rows+=`<tr class="section-row"><td colspan="${cols.length+1}" style="padding-left:28px;font-size:10.5px;">${row.label}</td></tr>`; return; }
+          rows += buildTrendRowSplit(row.label, row.type, row.indent, row.isPct, cols, breakDim, member);
+        });
+      });
+    }
+    tbody.innerHTML = rows;
+  }
+}
+
+function buildComparativeRow(label, type, indent, isPct, actual, prior) {
+  const varVal = (actual||0)-(prior||0);
+  const cls  = type==='bold'?'bold-row':'';
+  const ind  = indent===1?'indent-1':indent===2?'indent-2':'';
+  const icon = type==='expandable'?`<span class="expand-icon">+</span>`:'';
+  return `<tr class="${cls}">
+    <td class="${ind} ${type==='expandable'?'expandable':''}">${icon}${label}</td>
+    <td>${fmt(actual,isPct)}</td>
+    <td class="col-border-left">${fmt(prior,isPct)}</td>
+    <td>${fmtVar(varVal,isPct)}</td>
+    <td>${fmtVarPct(actual,prior)}</td>
+  </tr>`;
+}
+
+function buildTrendRow(label, type, indent, isPct, cols) {
+  const cls  = type==='bold'?'bold-row':'';
+  const ind  = indent===1?'indent-1':indent===2?'indent-2':'';
+  const icon = type==='expandable'?`<span class="expand-icon">+</span>`:'';
+  const cells = cols.map((_,i)=>`<td>${fmt(getTrendVal(label,i),isPct)}</td>`).join('');
+  return `<tr class="${cls}"><td class="${ind}">${icon}${label}</td>${cells}</tr>`;
+}
+
+function buildTrendRowSplit(label, type, indent, isPct, cols, dimName, member) {
+  const cls  = type==='bold'?'bold-row':'';
+  const ind  = indent===1?'indent-1':indent===2?'indent-2':'';
+  const icon = type==='expandable'?`<span class="expand-icon">+</span>`:'';
+  const cells = cols.map((_,i)=>`<td>${fmt(getTrendValSplit(label,i,dimName,member),isPct)}</td>`).join('');
+  return `<tr class="${cls}"><td class="${ind}">${icon}${label}</td>${cells}</tr>`;
+}
+
+// ─── CONTROLS ───
+function setView(v) {
+  currentView=v;
+  document.getElementById('btnComparative').classList.toggle('active',v==='comparative');
+  document.getElementById('btnTrend').classList.toggle('active',v==='trend');
+  renderTable();
+}
+function setPeriod(p) {
+  currentPeriod=p;
+  document.getElementById('btnMonthly').classList.toggle('active',p==='monthly');
+  document.getElementById('btnQuarterly').classList.toggle('active',p==='quarterly');
+  document.getElementById('btnYear').classList.toggle('active',p==='year');
+  renderTable();
+}
+function updateTable(){renderTable();}
+function toggleAbbr(){
+  abbreviated=!abbreviated;
+  document.getElementById('btnAbbr').classList.toggle('active',abbreviated);
+  renderTable();
+}
+function resetAll(){
+  currentView='comparative';currentPeriod='monthly';currentMonth='Mar-2026';abbreviated=false;
+  document.getElementById('monthVal').textContent='Mar-2026';
+  document.querySelectorAll('.month-option').forEach(o=>o.classList.toggle('selected',o.textContent==='Mar-2026'));
+  document.getElementById('btnComparative').classList.add('active');
+  document.getElementById('btnTrend').classList.remove('active');
+  document.getElementById('btnMonthly').classList.add('active');
+  document.getElementById('btnQuarterly').classList.remove('active');
+  document.getElementById('btnYear').classList.remove('active');
+  document.getElementById('btnAbbr').classList.remove('active');
+  Object.keys(rowDimMap).forEach(id=>{const el=document.getElementById(id);if(el)el.checked=(id==='r_acch');});
+  Object.keys(colDimMap).forEach(id=>{const el=document.getElementById(id);if(el)el.checked=(id==='c_acch');});
+  closeAllPanels();renderTable();
+}
+
+// ─── PANELS ───
+let openPanel=null;
+function togglePanel(name){
+  const panels={rows:'rowsPanel',cols:'colsPanel',adv:'advPanel'};
+  const btns={rows:'btnRows',cols:'btnCols',adv:'btnAdv'};
+  if(openPanel===name){closeAllPanels();return;}
+  closeAllPanels(false);
+  document.getElementById(panels[name]).classList.add('open');
+  document.getElementById(btns[name])?.classList.add('active');
+  document.getElementById('overlay').classList.add('open');
+  openPanel=name;
+}
+function closeAllPanels(reset=true){
+  ['rowsPanel','colsPanel','advPanel'].forEach(id=>document.getElementById(id).classList.remove('open'));
+  ['btnRows','btnCols','btnAdv'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  document.getElementById('overlay').classList.remove('open');
+  if(reset)openPanel=null;
+}
+
+// ─── MONTH PICKER ───
+function toggleMonthDropdown(e){e.stopPropagation();document.getElementById('monthDropdown').classList.toggle('open');}
+function selectMonth(m,e){
+  e.stopPropagation();currentMonth=m;
+  document.getElementById('monthVal').textContent=m;
+  document.querySelectorAll('.month-option').forEach(o=>o.classList.toggle('selected',o.textContent===m));
+  document.getElementById('monthDropdown').classList.remove('open');
+  renderTable();
+}
+document.addEventListener('click',()=>document.getElementById('monthDropdown').classList.remove('open'));
+
+// ─── EXPORT ───
+function exportCSV(){
+  let csv='';
+  document.getElementById('mainTable').querySelectorAll('tr').forEach(row=>{
+    csv+=[...row.querySelectorAll('th,td')].map(c=>`"${c.innerText.replace(/"/g,'""')}"`).join(',')+'\n';
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`FTE_Dashboard_${currentMonth}.csv`;a.click();
+}
+function exportExcel(){exportCSV();}
+
+// ─── ADV RADIO ───
+document.querySelectorAll('.adv-radio input').forEach(r=>{
+  r.addEventListener('change',()=>{
+    document.querySelectorAll('.adv-radio').forEach(el=>el.classList.remove('selected'));
+    r.closest('.adv-radio').classList.add('selected');
+  });
+});
+
+// ─── INIT ───
+renderTable();
+</script>
+</body>
+</html>
