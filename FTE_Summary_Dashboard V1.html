@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTE Summary Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:       #0D2B6E;
+    --navy2:      #1a3a82;
+    --blue:       #2563EB;
+    --blue-light: #EFF6FF;
+    --teal:       #0891B2;
+    --green:      #16A34A;
+    --green-bg:   #DCFCE7;
+    --red:        #DC2626;
+    --red-bg:     #FEE2E2;
+    --orange:     #EA580C;
+    --amber:      #F59E0B;
+    --purple:     #7C3AED;
+    --slate:      #64748B;
+    --border:     #E2E8F0;
+    --bg:         #F0F4FA;
+    --white:      #FFFFFF;
+    --text:       #1E293B;
+    --text-sm:    #475569;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.05);
+    --card-hover:  0 4px 16px rgba(37,99,235,0.12), 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .page-header {
+    background: var(--navy);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  .page-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.3px;
+  }
+  .page-title span { color: #60A5FA; }
+  .header-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.08);
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  /* ── FILTERS ── */
+  .filters-bar {
+    background: white;
+    padding: 8px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .filter-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-sm);
+    background: white;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .filter-chip:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+  .filter-chip .chip-label { color: #94A3B8; font-weight: 400; margin-right: 1px; }
+  .filter-chip .chip-val { color: var(--text); font-weight: 600; }
+  .filter-chip.active { border-color: var(--blue); background: var(--blue-light); }
+  .filter-chip.active .chip-val { color: var(--blue); }
+
+  /* ── MAIN LAYOUT ── */
+  .main { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--slate);
+    margin-bottom: -8px;
+    padding-left: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── TILE GRID ── */
+  .tile-row { display: grid; gap: 14px; }
+  .row-5 { grid-template-columns: repeat(5, 1fr); }
+  .row-4 { grid-template-columns: repeat(4, 1fr); }
+  .row-3 { grid-template-columns: repeat(3, 1fr); }
+
+  /* ── BASE TILE ── */
+  .tile {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: box-shadow 0.2s, transform 0.2s;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+  }
+  .tile:hover { box-shadow: var(--card-hover); transform: translateY(-1px); }
+
+  /* accent bar top */
+  .tile::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--tile-accent, var(--blue));
+    border-radius: 10px 10px 0 0;
+  }
+
+  /* tile color variants */
+  .tile-total   { --tile-accent: var(--navy); }
+  .tile-blue    { --tile-accent: var(--blue); }
+  .tile-teal    { --tile-accent: var(--teal); }
+  .tile-green   { --tile-accent: var(--green); }
+  .tile-purple  { --tile-accent: var(--purple); }
+  .tile-orange  { --tile-accent: var(--orange); }
+  .tile-amber   { --tile-accent: var(--amber); }
+
+  /* ── TILE HEADER ── */
+  .tile-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .tile-name {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--slate);
+  }
+  .tile-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .badge-blue   { background: #DBEAFE; color: var(--blue); }
+  .badge-teal   { background: #CFFAFE; color: var(--teal); }
+  .badge-green  { background: var(--green-bg); color: var(--green); }
+  .badge-purple { background: #EDE9FE; color: var(--purple); }
+  .badge-orange { background: #FED7AA; color: var(--orange); }
+  .badge-navy   { background: #DBEAFE; color: var(--navy); }
+
+  /* ── MAIN KPI VALUE ── */
+  .tile-kpi {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    line-height: 1;
+  }
+  .kpi-unit {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--slate);
+  }
+
+  /* ── COMPARISONS ── */
+  .tile-comps {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .comp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+  .comp-label { color: var(--slate); font-weight: 400; }
+  .comp-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .up   { color: var(--green); }
+  .down { color: var(--red); }
+  .flat { color: var(--slate); }
+
+  /* ── SPARKLINE ── */
+  .tile-spark {
+    margin-top: 2px;
+  }
+  .spark-svg { width: 100%; height: 36px; display: block; }
+
+  /* ── YTD BADGE ── */
+  .ytd-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    margin-top: 2px;
+    align-self: flex-start;
+  }
+  .ytd-up   { background: var(--green-bg); color: var(--green); }
+  .ytd-down { background: var(--red-bg); color: var(--red); }
+
+  /* ── MINI BAR (utilization) ── */
+  .mini-bar-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .mini-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mini-bar-label { font-size: 10.5px; color: var(--slate); width: 56px; flex-shrink: 0; }
+  .mini-bar-track {
+    flex: 1;
+    height: 5px;
+    background: #E2E8F0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .mini-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s ease;
+  }
+  .mini-bar-val { font-size: 10.5px; font-weight: 600; font-family: 'DM Mono', monospace; width: 36px; text-align: right; flex-shrink: 0; }
+
+  /* ── LOCATION BREAKDOWN TILE ── */
+  .location-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 2px;
+  }
+  .loc-item {
+    background: #F8FAFC;
+    border-radius: 6px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+  }
+  .loc-name  { font-size: 10px; color: var(--slate); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .loc-value { font-size: 18px; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--text); margin-top: 2px; }
+  .loc-var   { font-size: 10px; font-weight: 600; margin-top: 1px; }
+
+  /* ── BILLTYPE TILE ── */
+  .billtype-list { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+  .bt-row { display: flex; align-items: center; justify-content: space-between; }
+  .bt-name { font-size: 11px; color: var(--slate); }
+  .bt-right { display: flex; align-items: center; gap: 8px; }
+  .bt-val { font-size: 12px; font-weight: 700; font-family: 'DM Mono', monospace; }
+  .bt-pct {
+    font-size: 10px; font-weight: 600;
+    padding: 1px 6px; border-radius: 8px;
+  }
+
+  /* ── DONUT TILE ── */
+  .donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .donut-legend { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .legend-item  { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .legend-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-label { color: var(--slate); flex: 1; }
+  .legend-val   { font-weight: 700; font-family: 'DM Mono', monospace; font-size: 11px; }
+
+  /* ── ATTRITION TILE ── */
+  .attr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+  .attr-box  { background: #F8FAFC; border-radius: 6px; padding: 8px 10px; border: 1px solid var(--border); text-align: center; }
+  .attr-box-label { font-size: 9.5px; color: var(--slate); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+  .attr-box-val   { font-size: 18px; font-weight: 700; font-family: 'DM Mono', monospace; margin-top: 3px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1200px) {
+    .row-5 { grid-template-columns: repeat(3, 1fr); }
+    .row-4 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .row-5, .row-4, .row-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ── FOOTER ── */
+  .page-footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--slate);
+    padding: 16px 24px 24px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(12px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .tile { animation: fadeUp 0.4s ease both; }
+  .tile:nth-child(1) { animation-delay: 0.05s; }
+  .tile:nth-child(2) { animation-delay: 0.10s; }
+  .tile:nth-child(3) { animation-delay: 0.15s; }
+  .tile:nth-child(4) { animation-delay: 0.20s; }
+  .tile:nth-child(5) { animation-delay: 0.25s; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-header">
+  <div class="page-title">PRODUCTION FTE DASHBOARD &nbsp;<span id="headerDate"></span></div>
+  <div class="header-date" id="headerDateSmall"></div>
+</div>
+
+<!-- FILTERS -->
+<style>
+  .filter-chip { position: relative; cursor: pointer; user-select: none; }
+  .filter-chip .arrow { font-size: 9px; color: #94A3B8; margin-left: 2px; }
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 9999;
+    min-width: 200px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+  .dropdown-menu.wide { min-width: 260px; }
+  .dropdown-menu.open { display: block; }
+  .dropdown-search {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: white;
+  }
+  .dropdown-search input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+  }
+  .dropdown-search input:focus { border-color: var(--blue); }
+  .dropdown-item {
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.1s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dropdown-item:hover { background: var(--blue-light); color: var(--blue); }
+  .dropdown-item.selected { background: #EFF6FF; color: var(--blue); font-weight: 600; }
+  .dropdown-item.all-item { font-weight: 600; color: var(--navy); border-bottom: 1px solid var(--border); }
+  .filter-chip.has-value { border-color: var(--blue); background: var(--blue-light); }
+  .filter-chip.has-value .chip-label { color: var(--blue); }
+  .filter-chip.has-value .chip-val { color: var(--navy); font-weight: 700; }
+  .filters-bar-overlay {
+    display: none; position: fixed; inset: 0; z-index: 999;
+  }
+  .filters-bar-overlay.open { display: block; }
+</style>
+
+<div class="filters-bar-overlay" id="filterOverlay" onclick="closeAllDropdowns()"></div>
+
+<div class="filters-bar">
+
+  <!-- Date -->
+  <div class="filter-chip active" id="chip-date" onclick="toggleDropdown('dd-date', event)">
+    <span class="chip-label">Date</span>
+    <span class="chip-val" id="val-date">10/02/2026</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu" id="dd-date">
+      <div class="dropdown-item all-item selected" onclick="selectFilter('date','10/02/2026',this)">10/02/2026</div>
+      <div class="dropdown-item" onclick="selectFilter('date','09/02/2026',this)">09/02/2026</div>
+      <div class="dropdown-item" onclick="selectFilter('date','08/02/2026',this)">08/02/2026</div>
+      <div class="dropdown-item" onclick="selectFilter('date','07/02/2026',this)">07/02/2026</div>
+      <div class="dropdown-item" onclick="selectFilter('date','06/02/2026',this)">06/02/2026</div>
+      <div class="dropdown-item" onclick="selectFilter('date','05/02/2026',this)">05/02/2026</div>
+      <div class="dropdown-item" onclick="selectFilter('date','31/01/2026',this)">31/01/2026</div>
+      <div class="dropdown-item" onclick="selectFilter('date','30/01/2026',this)">30/01/2026</div>
+    </div>
+  </div>
+
+  <!-- Market -->
+  <div class="filter-chip" id="chip-market" onclick="toggleDropdown('dd-market', event)">
+    <span class="chip-label">Market</span>
+    <span class="chip-val" id="val-market">All</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu" id="dd-market">
+      <div class="dropdown-item all-item selected" onclick="selectFilter('market','All',this)">All</div>
+      <div class="dropdown-item" onclick="selectFilter('market','APJ',this)">APJ</div>
+      <div class="dropdown-item" onclick="selectFilter('market','Americas',this)">Americas</div>
+      <div class="dropdown-item" onclick="selectFilter('market','EMEA',this)">EMEA</div>
+      <div class="dropdown-item" onclick="selectFilter('market','GGM',this)">GGM</div>
+      <div class="dropdown-item" onclick="selectFilter('market','Internal',this)">Internal</div>
+      <div class="dropdown-item" onclick="selectFilter('market','M&A - Multi Market',this)">M&A - Multi Market</div>
+      <div class="dropdown-item" onclick="selectFilter('market','Not Defined',this)">Not Defined</div>
+      <div class="dropdown-item" onclick="selectFilter('market','Others',this)">Others</div>
+    </div>
+  </div>
+
+  <!-- Market Unit -->
+  <div class="filter-chip" id="chip-mu" onclick="toggleDropdown('dd-mu', event)">
+    <span class="chip-label">Market Unit</span>
+    <span class="chip-val" id="val-mu">All</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu wide" id="dd-mu">
+      <div class="dropdown-search"><input type="text" placeholder="Search..." oninput="filterDropdown('dd-mu', this.value)" onclick="event.stopPropagation()"></div>
+      <div class="dropdown-item all-item selected" onclick="selectFilter('mu','All',this)">All</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','3Cloud',this)">3Cloud</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','ANZ',this)">ANZ</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','APJ Others',this)">APJ Others</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','ASEAN and GCN',this)">ASEAN and GCN</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','Belcan',this)">Belcan</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','CMT NA',this)">CMT NA</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','Consulting SGA GGM',this)">Consulting SGA GGM</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','Consulting SGA NA',this)">Consulting SGA NA</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','DACH',this)">DACH</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','EMEA Others',this)">EMEA Others</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','FSI NA',this)">FSI NA</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','GGM Management and Invmt',this)">GGM Management and Invmt</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','HEALTH NA',this)">HEALTH NA</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','India',this)">India</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','Internal',this)">Internal</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','Japan',this)">Japan</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','M&A GGM',this)">M&A GGM</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','M&A Multimarkets',this)">M&A Multimarkets</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','M&A NA',this)">M&A NA</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','MLEU NA',this)">MLEU NA</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','Northern Europe',this)">Northern Europe</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','Not Defined',this)">Not Defined</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','Others',this)">Others</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','Others NA',this)">Others NA</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','RCGTH NA',this)">RCGTH NA</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','Southern Europe & Middle East',this)">Southern Europe & Middle East</div>
+      <div class="dropdown-item" onclick="selectFilter('mu','UK&I',this)">UK&I</div>
+    </div>
+  </div>
+
+  <!-- Business Unit -->
+  <div class="filter-chip" id="chip-bu" onclick="toggleDropdown('dd-bu', event)">
+    <span class="chip-label">Business Unit</span>
+    <span class="chip-val" id="val-bu">All</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu wide" id="dd-bu">
+      <div class="dropdown-search"><input type="text" placeholder="Search..." oninput="filterDropdown('dd-bu', this.value)" onclick="event.stopPropagation()"></div>
+      <div class="dropdown-item all-item selected" onclick="selectFilter('bu','All',this)">All</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','3Cloud',this)">3Cloud</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','APJ Others',this)">APJ Others</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','ASEAN',this)">ASEAN</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Australia',this)">Australia</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','BFS-NA',this)">BFS-NA</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','BFS-UK',this)">BFS-UK</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Banking & Capital Markets - NA',this)">Banking & Capital Markets - NA</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Belcan',this)">Belcan</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','CMT NA',this)">CMT NA (deprecated)</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','CommsMedia-NA',this)">CommsMedia-NA</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','CommsMedia-UK',this)">CommsMedia-UK</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Consumer NA',this)">Consumer NA</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Devbridge',this)">Devbridge</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','EMEA Others',this)">EMEA Others</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','France',this)">France</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','GGM Central',this)">GGM Central</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Germany',this)">Germany</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','India',this)">India</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Insurance 1',this)">Insurance 1</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Insurance 2',this)">Insurance 2</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Japan',this)">Japan</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Life Sciences-NA',this)">Life Sciences-NA</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Life Sciences-UK',this)">Life Sciences-UK</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','MLEU NA',this)">MLEU NA</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Netherlands',this)">Netherlands</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','New Zealand',this)">New Zealand</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Nordics & Baltics',this)">Nordics & Baltics</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Not Defined',this)">Not Defined</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Others',this)">Others</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','RCGTH-NA',this)">RCGTH-NA</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Retail NA',this)">Retail NA</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Servian',this)">Servian</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Technology-NA',this)">Technology-NA</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Technology-UK',this)">Technology-UK</div>
+      <div class="dropdown-item" onclick="selectFilter('bu','Transport-UK',this)">Transport-UK</div>
+    </div>
+  </div>
+
+  <!-- Parent Customer -->
+  <div class="filter-chip" id="chip-pc" onclick="toggleDropdown('dd-pc', event)">
+    <span class="chip-label">Parent Customer</span>
+    <span class="chip-val" id="val-pc">All</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu wide" id="dd-pc">
+      <div class="dropdown-search"><input type="text" placeholder="Search customer..." oninput="filterDropdown('dd-pc', this.value)" onclick="event.stopPropagation()"></div>
+      <div class="dropdown-item all-item selected" onclick="selectFilter('pc','All',this)">All</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','3M',this)">3M</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','ABN AMRO',this)">ABN AMRO</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','ABBOTT',this)">ABBOTT</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','ACCENTURE',this)">ACCENTURE</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','AGL',this)">AGL</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','AIG',this)">AIG</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','AIRBUS',this)">AIRBUS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','AMAZON',this)">AMAZON</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','AMERICAN EXPRESS',this)">AMERICAN EXPRESS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','ANZ BANKING GROUP LTD',this)">ANZ BANKING GROUP LTD</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','AON CORPORATION',this)">AON CORPORATION</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','AT&T',this)">AT&T</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','BANK OF AMERICA',this)">BANK OF AMERICA</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','BARCLAYS',this)">BARCLAYS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','BAYER',this)">BAYER</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','BMW',this)">BMW</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','BOEING',this)">BOEING</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','BP',this)">BP</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','BRISTOL-MYERS SQUIBB',this)">BRISTOL-MYERS SQUIBB</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','CAPITAL ONE',this)">CAPITAL ONE</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','CIGNA',this)">CIGNA</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','CISCO',this)">CISCO</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','CITI',this)">CITI</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','CVS HEALTH',this)">CVS HEALTH</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','DEUTSCHE BANK',this)">DEUTSCHE BANK</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','DHL',this)">DHL</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','EY',this)">EY</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','FEDEX',this)">FEDEX</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','FORD',this)">FORD</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','GENERAL ELECTRIC',this)">GENERAL ELECTRIC</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','GENERAL MOTORS',this)">GENERAL MOTORS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','GLAXOSMITHKLINE',this)">GLAXOSMITHKLINE</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','GOLDMAN SACHS',this)">GOLDMAN SACHS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','GOOGLE',this)">GOOGLE</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','HSBC',this)">HSBC</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','HUMANA INC.',this)">HUMANA INC.</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','IBM',this)">IBM</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','INTEL CORPORATION',this)">INTEL CORPORATION</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','JOHNSON & JOHNSON',this)">JOHNSON & JOHNSON</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','JPMC',this)">JPMC</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','KAISER PERMANENTE',this)">KAISER PERMANENTE</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','KPMG L.L.P.',this)">KPMG L.L.P.</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','MASTERCARD WORLDWIDE',this)">MASTERCARD WORLDWIDE</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','MCKINSEY & CO',this)">MCKINSEY & CO</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','MEDTRONIC',this)">MEDTRONIC</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','MERCK',this)">MERCK</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','META',this)">META</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','MICROSOFT',this)">MICROSOFT</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','MORGAN STANLEY',this)">MORGAN STANLEY</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','NATIONAL AUSTRALIA BANK',this)">NATIONAL AUSTRALIA BANK</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','NATIONWIDE MUTUAL',this)">NATIONWIDE MUTUAL</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','NETFLIX',this)">NETFLIX</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','NHS',this)">NHS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','NIKE',this)">NIKE</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','NOVARTIS',this)">NOVARTIS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','NOVO NORDISK',this)">NOVO NORDISK</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','PFIZER',this)">PFIZER</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','PHILIPS',this)">PHILIPS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','PRUDENTIAL',this)">PRUDENTIAL</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','PWC',this)">PWC</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','RBS',this)">RBS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','ROCHE',this)">ROCHE</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','ROYAL BANK OF CANADA',this)">ROYAL BANK OF CANADA</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','SAMSUNG',this)">SAMSUNG</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','SAP',this)">SAP</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','SHELL GROUP',this)">SHELL GROUP</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','SIEMENS',this)">SIEMENS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','STANDARD CHARTERED',this)">STANDARD CHARTERED</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','STATE FARM MUTUAL AUTOMOBILE',this)">STATE FARM MUTUAL AUTOMOBILE</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','TESCO',this)">TESCO</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','TOYOTA',this)">TOYOTA</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','UBS',this)">UBS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','UNILEVER',this)">UNILEVER</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','UPS',this)">UPS</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','VERIZON',this)">VERIZON</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','VISA',this)">VISA</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','VOLKSWAGEN',this)">VOLKSWAGEN</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','WALMART',this)">WALMART</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','WELLS FARGO',this)">WELLS FARGO</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','WESTPAC BANKING CORPORATION',this)">WESTPAC BANKING CORPORATION</div>
+      <div class="dropdown-item" onclick="selectFilter('pc','ZURICH FINANCIAL',this)">ZURICH FINANCIAL</div>
+    </div>
+  </div>
+
+  <!-- Service Line -->
+  <div class="filter-chip" id="chip-sl" onclick="toggleDropdown('dd-sl', event)">
+    <span class="chip-label">Service Line</span>
+    <span class="chip-val" id="val-sl">All</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu wide" id="dd-sl">
+      <div class="dropdown-item all-item selected" onclick="selectFilter('sl','All',this)">All</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','BUSINESS SUPPORT',this)">BUSINESS SUPPORT</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','COGNIZANT MOMENT',this)">COGNIZANT MOMENT</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','CORE TECHNOLOGIES & INSIGHTS',this)">CORE TECHNOLOGIES & INSIGHTS</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','CORPORATE DEPLOYABLE POOL',this)">CORPORATE DEPLOYABLE POOL</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','CYBERSECURITY',this)">CYBERSECURITY</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','DIGITAL BUSINESS',this)">DIGITAL BUSINESS</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','DIGITAL BUSINESS & TECHNOLOGY',this)">DIGITAL BUSINESS & TECHNOLOGY</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','ENGINEERING RESEARCH & DEVELOPMENT',this)">ENGINEERING RESEARCH & DEVELOPMENT</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','ENTERPRISE PLATFORM SERVICES',this)">ENTERPRISE PLATFORM SERVICES</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','INDUSTRY SOLUTIONS GROUP',this)">INDUSTRY SOLUTIONS GROUP</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','INTUITIVE OPERATIONS & AUTOMATION',this)">INTUITIVE OPERATIONS & AUTOMATION</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','MARKET CONSULTING',this)">MARKET CONSULTING</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','MICROSOFT AZURE',this)">MICROSOFT AZURE</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','OTHERS',this)">OTHERS</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','PLATFORM GROUP',this)">PLATFORM GROUP</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','SOFTWARE ENGINEERING GROUP',this)">SOFTWARE ENGINEERING GROUP</div>
+      <div class="dropdown-item" onclick="selectFilter('sl','SOFTWARE PRODUCT GROUP',this)">SOFTWARE PRODUCT GROUP</div>
+    </div>
+  </div>
+
+  <!-- Practice Name -->
+  <div class="filter-chip" id="chip-pn" onclick="toggleDropdown('dd-pn', event)">
+    <span class="chip-label">Practice Name</span>
+    <span class="chip-val" id="val-pn">All</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu wide" id="dd-pn">
+      <div class="dropdown-search"><input type="text" placeholder="Search..." oninput="filterDropdown('dd-pn', this.value)" onclick="event.stopPropagation()"></div>
+      <div class="dropdown-item all-item selected" onclick="selectFilter('pn','All',this)">All</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','ADM Application Development',this)">ADM Application Development</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','ADM Central',this)">ADM Central</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','AIA Data',this)">AIA Data</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','AIA Intelligence',this)">AIA Intelligence</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','AIA Top',this)">AIA Top</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','CIS Business Experience Svcs',this)">CIS Business Experience Svcs</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','CIS Business Foundation Servcs',this)">CIS Business Foundation Servcs</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','CIS Cloud Services',this)">CIS Cloud Services</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','CIS Infra Managed Svcs',this)">CIS Infra Managed Svcs</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','CIS Security',this)">CIS Security</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','Corporate Deployable Pool',this)">Corporate Deployable Pool</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','Cybersecurity',this)">Cybersecurity</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','DE Enterprise Engineering',this)">DE Enterprise Engineering</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','EPS Oracle',this)">EPS Oracle</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','EPS SAP',this)">EPS SAP</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','EPS Workday',this)">EPS Workday</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','Enablement',this)">Enablement</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','GGM BFS Consulting Group',this)">GGM BFS Consulting Group</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','GGM CMT Consulting Group',this)">GGM CMT Consulting Group</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','GGM LS Consulting Group',this)">GGM LS Consulting Group</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','GGM RCGTH Consulting Group',this)">GGM RCGTH Consulting Group</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','IOA Business Operations',this)">IOA Business Operations</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','IOA Central',this)">IOA Central</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','ISG BFS Group',this)">ISG BFS Group</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','ISG CMT Group',this)">ISG CMT Group</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','ISG Insurance Group',this)">ISG Insurance Group</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','ISG LS Commercial Group',this)">ISG LS Commercial Group</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','ISG RCGTH Group',this)">ISG RCGTH Group</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','Meritsoft Product',this)">Meritsoft Product</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','Moment Digital Experience',this)">Moment Digital Experience</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','QEA',this)">QEA</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','ServiceNow',this)">ServiceNow</div>
+      <div class="dropdown-item" onclick="selectFilter('pn','SP&E Central',this)">SP&E Central</div>
+    </div>
+  </div>
+
+  <!-- Project Type -->
+  <div class="filter-chip" id="chip-pt" onclick="toggleDropdown('dd-pt', event)">
+    <span class="chip-label">Project Type</span>
+    <span class="chip-val" id="val-pt">EXTN</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu" id="dd-pt">
+      <div class="dropdown-item all-item" onclick="selectFilter('pt','All',this)">All</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','BENCH',this)">BENCH</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','CAPEX',this)">CAPEX</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','CORP',this)">CORP</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','DMGMT',this)">DMGMT</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','EXANT',this)">EXANT</div>
+      <div class="dropdown-item selected" onclick="selectFilter('pt','EXTN',this)">EXTN</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','EXTNandEXANT',this)">EXTNandEXANT</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','INFRA',this)">INFRA</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','INVMT',this)">INVMT</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','MGMNT',this)">MGMNT</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','OPS',this)">OPS</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','Others',this)">Others</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','SALES',this)">SALES</div>
+      <div class="dropdown-item" onclick="selectFilter('pt','TCE',this)">TCE</div>
+    </div>
+  </div>
+
+  <!-- Onsite Offshore -->
+  <div class="filter-chip" id="chip-oo" onclick="toggleDropdown('dd-oo', event)">
+    <span class="chip-label">Onsite Offshore</span>
+    <span class="chip-val" id="val-oo">All</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu" id="dd-oo">
+      <div class="dropdown-item all-item selected" onclick="selectFilter('oo','All',this)">All</div>
+      <div class="dropdown-item" onclick="selectFilter('oo','Offshore',this)">Offshore</div>
+      <div class="dropdown-item" onclick="selectFilter('oo','Onsite',this)">Onsite</div>
+    </div>
+  </div>
+
+  <!-- Practice Area -->
+  <div class="filter-chip" id="chip-pa" onclick="toggleDropdown('dd-pa', event)">
+    <span class="chip-label">Practice Area</span>
+    <span class="chip-val" id="val-pa">All</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu wide" id="dd-pa">
+      <div class="dropdown-search"><input type="text" placeholder="Search..." oninput="filterDropdown('dd-pa', this.value)" onclick="event.stopPropagation()"></div>
+      <div class="dropdown-item all-item selected" onclick="selectFilter('pa','All',this)">All</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','ANZ',this)">ANZ</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','APJ Others',this)">APJ Others</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','ASEAN and GCN',this)">ASEAN and GCN</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','Belcan',this)">Belcan</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','CMT NA',this)">CMT NA</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','DACH',this)">DACH</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','EMEA Others',this)">EMEA Others</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','FSI NA',this)">FSI NA</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','GGM Management and Invmt',this)">GGM Management and Invmt</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','HEALTH NA',this)">HEALTH NA</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','India',this)">India</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','Japan',this)">Japan</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','MLEU NA',this)">MLEU NA</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','Northern Europe',this)">Northern Europe</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','Not Defined',this)">Not Defined</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','Others NA',this)">Others NA</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','RCGTH NA',this)">RCGTH NA</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','Southern Europe & Middle East',this)">Southern Europe & Middle East</div>
+      <div class="dropdown-item" onclick="selectFilter('pa','UK&I',this)">UK&I</div>
+    </div>
+  </div>
+
+  <!-- Billability -->
+  <div class="filter-chip has-value" id="chip-bill" onclick="toggleDropdown('dd-bill', event)">
+    <span class="chip-label">Billability</span>
+    <span class="chip-val" id="val-bill">Billable</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu" id="dd-bill">
+      <div class="dropdown-item all-item" onclick="selectFilter('bill','All',this)">All</div>
+      <div class="dropdown-item selected" onclick="selectFilter('bill','Billable',this)">Billable</div>
+      <div class="dropdown-item" onclick="selectFilter('bill','Non-Billable',this)">Non-Billable</div>
+    </div>
+  </div>
+
+  <!-- KT Flag -->
+  <div class="filter-chip" id="chip-kt" onclick="toggleDropdown('dd-kt', event)">
+    <span class="chip-label">KT Flag</span>
+    <span class="chip-val" id="val-kt">All</span>
+    <span class="arrow">▼</span>
+    <div class="dropdown-menu" id="dd-kt">
+      <div class="dropdown-item all-item selected" onclick="selectFilter('kt','All',this)">All</div>
+      <div class="dropdown-item" onclick="selectFilter('kt','Yes',this)">Yes</div>
+      <div class="dropdown-item" onclick="selectFilter('kt','No',this)">No</div>
+    </div>
+  </div>
+
+  <!-- Reset + Apply -->
+  <div style="display:flex;gap:6px;margin-left:auto;align-items:center;">
+    <button onclick="resetFilters()" style="padding:4px 14px;border:1px solid var(--border);border-radius:20px;background:white;font-size:11.5px;font-weight:500;color:var(--slate);cursor:pointer;font-family:inherit;">Reset</button>
+    <button onclick="applyFilters()" style="padding:4px 14px;border:none;border-radius:20px;background:var(--navy);font-size:11.5px;font-weight:600;color:white;cursor:pointer;font-family:inherit;">Apply</button>
+  </div>
+
+</div>
+
+<!-- BELCAN FILTER SECTION -->
+<div style="background:#F0F4FA;border-bottom:1px solid var(--border);padding:6px 24px;display:flex;align-items:center;gap:24px;">
+  <span style="font-size:10.5px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:0.6px;">Belcan</span>
+  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text);">
+    <input type="radio" name="belcan" value="exclude" id="belcan-exclude" style="accent-color:var(--navy);">
+    Exclude Belcan
+  </label>
+  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text);">
+    <input type="radio" name="belcan" value="include" id="belcan-include" checked style="accent-color:var(--navy);">
+    Include Belcan
+  </label>
+</div>
+
+<script>
+// ── DROPDOWN LOGIC ──
+function toggleDropdown(id, event) {
+  event.stopPropagation();
+  const dd = document.getElementById(id);
+  const isOpen = dd.classList.contains('open');
+  closeAllDropdowns();
+  if (!isOpen) {
+    dd.classList.add('open');
+    document.getElementById('filterOverlay').classList.add('open');
+  }
+}
+
+function closeAllDropdowns() {
+  document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('open'));
+  document.getElementById('filterOverlay').classList.remove('open');
+}
+
+function selectFilter(key, value, el) {
+  event.stopPropagation();
+  const valMap = {
+    date:'val-date', market:'val-market', mu:'val-mu', bu:'val-bu',
+    pc:'val-pc', sl:'val-sl', pa:'val-pa', pn:'val-pn',
+    bill:'val-bill', pt:'val-pt', oo:'val-oo', kt:'val-kt'
+  };
+  const chipMap = {
+    date:'chip-date', market:'chip-market', mu:'chip-mu', bu:'chip-bu',
+    pc:'chip-pc', sl:'chip-sl', pa:'chip-pa', pn:'chip-pn',
+    bill:'chip-bill', pt:'chip-pt', oo:'chip-oo', kt:'chip-kt'
+  };
+
+  document.getElementById(valMap[key]).textContent = value.length > 18 ? value.substring(0,16)+'…' : value;
+
+  const chip = document.getElementById(chipMap[key]);
+  if (value === 'All') {
+    chip.classList.remove('has-value');
+  } else {
+    chip.classList.add('has-value');
+  }
+
+  el.closest('.dropdown-menu').querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+
+  closeAllDropdowns();
+}
+
+function resetFilters() {
+  const defaults = {
+    date:'10/02/2026', market:'All', mu:'All', bu:'All',
+    pc:'All', sl:'All', pa:'All', pn:'All',
+    bill:'Billable', pt:'EXTN', oo:'All', kt:'All'
+  };
+  const hasVal = ['bill','pt'];
+  Object.entries(defaults).forEach(([key, val]) => {
+    const valEl = document.getElementById('val-'+key);
+    const chipEl = document.getElementById('chip-'+key);
+    if (valEl) valEl.textContent = val;
+    if (chipEl) {
+      if (hasVal.includes(key) || val !== 'All') chipEl.classList.add('has-value');
+      else chipEl.classList.remove('has-value');
+    }
+  });
+  document.getElementById('belcan-include').checked = true;
+  document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+  document.querySelectorAll('.all-item').forEach(i => i.classList.add('selected'));
+}
+
+function applyFilters() {
+  const btn = document.querySelector('[onclick="applyFilters()"]');
+  btn.textContent = '✓ Applied';
+  btn.style.background = 'var(--green)';
+  setTimeout(() => { btn.textContent = 'Apply'; btn.style.background = 'var(--navy)'; }, 1500);
+}
+
+function filterDropdown(ddId, query) {
+  const dd = document.getElementById(ddId);
+  const q = query.toLowerCase();
+  dd.querySelectorAll('.dropdown-item:not(.all-item)').forEach(item => {
+    item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ROW 1: Total + Top 4 Markets -->
+  <div class="section-label">Total &amp; Markets</div>
+  <div class="tile-row row-5">
+
+    <!-- TOTAL -->
+    <div class="tile tile-total">
+      <div class="tile-header">
+        <div class="tile-name">Total Billed FTE</div>
+        <div class="tile-badge badge-navy">TOTAL</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value">12,845</div>
+        <div class="kpi-unit">FTE</div>
+      </div>
+      <div class="tile-comps">
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Day</span>
+          <span class="comp-val up">↑ 124</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Month</span>
+          <span class="comp-val up">↑ 543</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Year</span>
+          <span class="comp-val down">↓ 292,345</span>
+        </div>
+      </div>
+      <div class="ytd-badge ytd-up">↑ 4.4% MOM</div>
+      <div class="tile-spark">
+        <svg class="spark-svg" viewBox="0 0 160 36" preserveAspectRatio="none">
+          <defs><linearGradient id="g0" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0D2B6E" stop-opacity="0.3"/><stop offset="100%" stop-color="#0D2B6E" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,30 C20,28 30,20 50,18 S80,12 100,10 S130,8 160,6" fill="none" stroke="#0D2B6E" stroke-width="2"/>
+          <path d="M0,30 C20,28 30,20 50,18 S80,12 100,10 S130,8 160,6 L160,36 L0,36Z" fill="url(#g0)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- AMERICAS -->
+    <div class="tile tile-blue">
+      <div class="tile-header">
+        <div class="tile-name">Americas</div>
+        <div class="tile-badge badge-blue">MKT</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value">5,780</div>
+        <div class="kpi-unit">FTE</div>
+      </div>
+      <div class="tile-comps">
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Day</span>
+          <span class="comp-val up">↑ 56</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Month</span>
+          <span class="comp-val up">↑ 244</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Year</span>
+          <span class="comp-val down">↓ 131,580</span>
+        </div>
+      </div>
+      <div class="ytd-badge ytd-up">↑ 4.4% MOM</div>
+      <div class="tile-spark">
+        <svg class="spark-svg" viewBox="0 0 160 36" preserveAspectRatio="none">
+          <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2563EB" stop-opacity="0.25"/><stop offset="100%" stop-color="#2563EB" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,28 C20,26 35,22 55,16 S85,10 110,9 S140,8 160,7" fill="none" stroke="#2563EB" stroke-width="2"/>
+          <path d="M0,28 C20,26 35,22 55,16 S85,10 110,9 S140,8 160,7 L160,36 L0,36Z" fill="url(#g1)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- EMEA -->
+    <div class="tile tile-teal">
+      <div class="tile-header">
+        <div class="tile-name">EMEA</div>
+        <div class="tile-badge badge-teal">MKT</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value">4,496</div>
+        <div class="kpi-unit">FTE</div>
+      </div>
+      <div class="tile-comps">
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Day</span>
+          <span class="comp-val up">↑ 43</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Month</span>
+          <span class="comp-val up">↑ 190</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Year</span>
+          <span class="comp-val down">↓ 102,340</span>
+        </div>
+      </div>
+      <div class="ytd-badge ytd-up">↑ 4.4% MOM</div>
+      <div class="tile-spark">
+        <svg class="spark-svg" viewBox="0 0 160 36" preserveAspectRatio="none">
+          <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0891B2" stop-opacity="0.25"/><stop offset="100%" stop-color="#0891B2" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,32 C20,30 40,24 60,20 S90,14 115,12 S145,10 160,9" fill="none" stroke="#0891B2" stroke-width="2"/>
+          <path d="M0,32 C20,30 40,24 60,20 S90,14 115,12 S145,10 160,9 L160,36 L0,36Z" fill="url(#g2)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- APJ -->
+    <div class="tile tile-purple">
+      <div class="tile-header">
+        <div class="tile-name">APJ</div>
+        <div class="tile-badge badge-purple">MKT</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value">2,569</div>
+        <div class="kpi-unit">FTE</div>
+      </div>
+      <div class="tile-comps">
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Day</span>
+          <span class="comp-val up">↑ 25</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Month</span>
+          <span class="comp-val up">↑ 109</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Year</span>
+          <span class="comp-val down">↓ 58,425</span>
+        </div>
+      </div>
+      <div class="ytd-badge ytd-up">↑ 4.4% MOM</div>
+      <div class="tile-spark">
+        <svg class="spark-svg" viewBox="0 0 160 36" preserveAspectRatio="none">
+          <defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0.25"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,30 C20,29 40,25 60,22 S90,16 115,13 S145,10 160,8" fill="none" stroke="#7C3AED" stroke-width="2"/>
+          <path d="M0,30 C20,29 40,25 60,22 S90,16 115,13 S145,10 160,8 L160,36 L0,36Z" fill="url(#g3)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- India (5th market) -->
+    <div class="tile tile-orange">
+      <div class="tile-header">
+        <div class="tile-name">India &amp; MEA</div>
+        <div class="tile-badge badge-orange">MKT</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value" style="font-size:24px;">—</div>
+      </div>
+      <div class="tile-comps">
+        <div class="comp-row"><span class="comp-label">vs Prior Day</span><span class="comp-val flat">— 0</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Month</span><span class="comp-val flat">— 0</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Year</span><span class="comp-val flat">— 0</span></div>
+      </div>
+      <div style="font-size:11px;color:var(--slate);margin-top:4px;font-style:italic;">No Data Available</div>
+    </div>
+
+  </div><!-- end row 1 -->
+
+  <!-- ROW 2: Top 5 Service Lines -->
+  <div class="section-label">Service Lines</div>
+  <div class="tile-row row-5">
+
+    <!-- ADM -->
+    <div class="tile tile-blue">
+      <div class="tile-header">
+        <div class="tile-name">ADM</div>
+        <div class="tile-badge badge-blue">SVC LINE</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value">4,230</div>
+        <div class="kpi-unit">FTE</div>
+      </div>
+      <div class="tile-comps">
+        <div class="comp-row"><span class="comp-label">vs Prior Day</span><span class="comp-val up">↑ 41</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Month</span><span class="comp-val up">↑ 178</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Year</span><span class="comp-val down">↓ 96,240</span></div>
+      </div>
+      <div class="ytd-badge ytd-up">↑ 4.4% MOM</div>
+      <div class="tile-spark">
+        <svg class="spark-svg" viewBox="0 0 160 36" preserveAspectRatio="none">
+          <defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2563EB" stop-opacity="0.2"/><stop offset="100%" stop-color="#2563EB" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,28 C30,26 50,20 75,15 S110,10 130,9 S150,8 160,7" fill="none" stroke="#2563EB" stroke-width="2"/>
+          <path d="M0,28 C30,26 50,20 75,15 S110,10 130,9 S150,8 160,7 L160,36 L0,36Z" fill="url(#g4)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Digital Engineering -->
+    <div class="tile tile-teal">
+      <div class="tile-header">
+        <div class="tile-name">Digital Engg</div>
+        <div class="tile-badge badge-teal">SVC LINE</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value">3,105</div>
+        <div class="kpi-unit">FTE</div>
+      </div>
+      <div class="tile-comps">
+        <div class="comp-row"><span class="comp-label">vs Prior Day</span><span class="comp-val up">↑ 30</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Month</span><span class="comp-val up">↑ 131</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Year</span><span class="comp-val down">↓ 70,680</span></div>
+      </div>
+      <div class="ytd-badge ytd-up">↑ 4.4% MOM</div>
+      <div class="tile-spark">
+        <svg class="spark-svg" viewBox="0 0 160 36" preserveAspectRatio="none">
+          <defs><linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0891B2" stop-opacity="0.2"/><stop offset="100%" stop-color="#0891B2" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,30 C25,28 45,22 70,17 S105,12 130,10 S150,9 160,8" fill="none" stroke="#0891B2" stroke-width="2"/>
+          <path d="M0,30 C25,28 45,22 70,17 S105,12 130,10 S150,9 160,8 L160,36 L0,36Z" fill="url(#g5)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- BPS -->
+    <div class="tile tile-green">
+      <div class="tile-header">
+        <div class="tile-name">BPS</div>
+        <div class="tile-badge badge-green">SVC LINE</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value">2,568</div>
+        <div class="kpi-unit">FTE</div>
+      </div>
+      <div class="tile-comps">
+        <div class="comp-row"><span class="comp-label">vs Prior Day</span><span class="comp-val up">↑ 25</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Month</span><span class="comp-val up">↑ 108</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Year</span><span class="comp-val down">↓ 58,410</span></div>
+      </div>
+      <div class="ytd-badge ytd-up">↑ 4.4% MOM</div>
+      <div class="tile-spark">
+        <svg class="spark-svg" viewBox="0 0 160 36" preserveAspectRatio="none">
+          <defs><linearGradient id="g6" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#16A34A" stop-opacity="0.2"/><stop offset="100%" stop-color="#16A34A" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,26 C25,24 45,20 65,16 S100,11 125,10 S148,9 160,8" fill="none" stroke="#16A34A" stroke-width="2"/>
+          <path d="M0,26 C25,24 45,20 65,16 S100,11 125,10 S148,9 160,8 L160,36 L0,36Z" fill="url(#g6)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Cloud -->
+    <div class="tile tile-purple">
+      <div class="tile-header">
+        <div class="tile-name">Cloud &amp; Infra</div>
+        <div class="tile-badge badge-purple">SVC LINE</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value">1,924</div>
+        <div class="kpi-unit">FTE</div>
+      </div>
+      <div class="tile-comps">
+        <div class="comp-row"><span class="comp-label">vs Prior Day</span><span class="comp-val up">↑ 19</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Month</span><span class="comp-val up">↑ 81</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Year</span><span class="comp-val down">↓ 43,770</span></div>
+      </div>
+      <div class="ytd-badge ytd-up">↑ 4.4% MOM</div>
+      <div class="tile-spark">
+        <svg class="spark-svg" viewBox="0 0 160 36" preserveAspectRatio="none">
+          <defs><linearGradient id="g7" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0.2"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,30 C20,28 40,24 60,20 S90,15 115,12 S145,10 160,9" fill="none" stroke="#7C3AED" stroke-width="2"/>
+          <path d="M0,30 C20,28 40,24 60,20 S90,15 115,12 S145,10 160,9 L160,36 L0,36Z" fill="url(#g7)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- IoT & Analytics -->
+    <div class="tile tile-amber">
+      <div class="tile-header">
+        <div class="tile-name">IoT &amp; Analytics</div>
+        <div class="tile-badge badge-orange">SVC LINE</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value">1,018</div>
+        <div class="kpi-unit">FTE</div>
+      </div>
+      <div class="tile-comps">
+        <div class="comp-row"><span class="comp-label">vs Prior Day</span><span class="comp-val up">↑ 9</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Month</span><span class="comp-val up">↑ 43</span></div>
+        <div class="comp-row"><span class="comp-label">vs Prior Year</span><span class="comp-val down">↓ 23,155</span></div>
+      </div>
+      <div class="ytd-badge ytd-up">↑ 4.4% MOM</div>
+      <div class="tile-spark">
+        <svg class="spark-svg" viewBox="0 0 160 36" preserveAspectRatio="none">
+          <defs><linearGradient id="g8" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F59E0B" stop-opacity="0.2"/><stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,30 C20,28 40,25 62,21 S95,15 120,13 S148,11 160,10" fill="none" stroke="#F59E0B" stroke-width="2"/>
+          <path d="M0,30 C20,28 40,25 62,21 S95,15 120,13 S148,11 160,10 L160,36 L0,36Z" fill="url(#g8)"/>
+        </svg>
+      </div>
+    </div>
+
+  </div><!-- end row 2 -->
+
+  <!-- ROW 3: Location + Bill Type + Utilization + Headcount + Attrition -->
+  <div class="section-label">Onsite / Offshore &amp; Headcount Metrics</div>
+  <div class="tile-row row-5">
+
+    <!-- ONSITE vs OFFSHORE -->
+    <div class="tile tile-blue">
+      <div class="tile-header">
+        <div class="tile-name">Location Split</div>
+        <div class="tile-badge badge-blue">BILLED FTE</div>
+      </div>
+      <div class="location-grid">
+        <div class="loc-item">
+          <div class="loc-name">Offshore</div>
+          <div class="loc-value">7,425</div>
+          <div class="loc-var up" style="font-size:10px">↑ 303 &nbsp;<span style="color:var(--slate)">4.3%</span></div>
+        </div>
+        <div class="loc-item">
+          <div class="loc-name">Onsite</div>
+          <div class="loc-value">5,420</div>
+          <div class="loc-var up" style="font-size:10px">↑ 240 &nbsp;<span style="color:var(--slate)">4.6%</span></div>
+        </div>
+      </div>
+      <div class="tile-spark" style="margin-top:4px;">
+        <svg class="spark-svg" viewBox="0 0 160 36" preserveAspectRatio="none">
+          <defs><linearGradient id="g9" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2563EB" stop-opacity="0.15"/><stop offset="100%" stop-color="#2563EB" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,28 C25,26 50,20 75,16 S110,12 135,10 S155,9 160,8" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <path d="M0,32 C25,30 50,26 75,22 S110,17 135,15 S155,13 160,12" fill="none" stroke="#0891B2" stroke-width="1.5"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- BILL TYPE -->
+    <div class="tile tile-teal">
+      <div class="tile-header">
+        <div class="tile-name">Bill Type</div>
+        <div class="tile-badge badge-teal">BILLED FTE</div>
+      </div>
+      <div class="billtype-list">
+        <div class="bt-row">
+          <span class="bt-name">T&amp;M</span>
+          <div class="bt-right">
+            <span class="bt-val">7,065</span>
+            <span class="bt-pct" style="background:#CFFAFE;color:var(--teal)">55%</span>
+          </div>
+        </div>
+        <div class="bt-row">
+          <span class="bt-name">Fixed Price</span>
+          <div class="bt-right">
+            <span class="bt-val">3,854</span>
+            <span class="bt-pct" style="background:#EDE9FE;color:var(--purple)">30%</span>
+          </div>
+        </div>
+        <div class="bt-row">
+          <span class="bt-name">Managed Svc</span>
+          <div class="bt-right">
+            <span class="bt-val">1,926</span>
+            <span class="bt-pct" style="background:#FED7AA;color:var(--orange)">15%</span>
+          </div>
+        </div>
+      </div>
+      <div class="tile-spark" style="margin-top:6px;">
+        <!-- stacked mini bar -->
+        <div style="display:flex;height:6px;border-radius:4px;overflow:hidden;gap:2px;">
+          <div style="flex:55;background:#0891B2;border-radius:4px 0 0 4px;"></div>
+          <div style="flex:30;background:#7C3AED;"></div>
+          <div style="flex:15;background:#EA580C;border-radius:0 4px 4px 0;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UTILIZATION -->
+    <div class="tile tile-green">
+      <div class="tile-header">
+        <div class="tile-name">Utilization</div>
+        <div class="tile-badge badge-green">% RATE</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value" style="color:var(--green)">87.5<span style="font-size:16px">%</span></div>
+      </div>
+      <div class="mini-bar-wrap">
+        <div class="mini-bar-row">
+          <span class="mini-bar-label">Offshore</span>
+          <div class="mini-bar-track"><div class="mini-bar-fill" style="width:89.1%;background:var(--green);"></div></div>
+          <span class="mini-bar-val" style="color:var(--green)">89.1%</span>
+        </div>
+        <div class="mini-bar-row">
+          <span class="mini-bar-label">Onsite</span>
+          <div class="mini-bar-track"><div class="mini-bar-fill" style="width:85.3%;background:var(--teal);"></div></div>
+          <span class="mini-bar-val" style="color:var(--teal)">85.3%</span>
+        </div>
+        <div class="mini-bar-row">
+          <span class="mini-bar-label">Prior Mo.</span>
+          <div class="mini-bar-track"><div class="mini-bar-fill" style="width:85.2%;background:#CBD5E1;"></div></div>
+          <span class="mini-bar-val" style="color:var(--slate)">85.2%</span>
+        </div>
+      </div>
+      <div class="ytd-badge ytd-up" style="margin-top:4px;">↑ 2.3% MOM</div>
+    </div>
+
+    <!-- TOTAL HEADCOUNT -->
+    <div class="tile tile-purple">
+      <div class="tile-header">
+        <div class="tile-name">Headcount</div>
+        <div class="tile-badge badge-purple">ACTIVE HC</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value">14,920</div>
+      </div>
+      <div class="attr-grid">
+        <div class="attr-box">
+          <div class="attr-box-label">Permanent</div>
+          <div class="attr-box-val" style="color:var(--purple)">13,245</div>
+        </div>
+        <div class="attr-box">
+          <div class="attr-box-label">Contract</div>
+          <div class="attr-box-val" style="color:var(--teal)">1,675</div>
+        </div>
+        <div class="attr-box">
+          <div class="attr-box-label">Joinings</div>
+          <div class="attr-box-val" style="color:var(--green)">245</div>
+        </div>
+        <div class="attr-box">
+          <div class="attr-box-label">Leavings</div>
+          <div class="attr-box-val" style="color:var(--red)">155</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTRITION -->
+    <div class="tile tile-orange">
+      <div class="tile-header">
+        <div class="tile-name">Attrition &amp; Bench</div>
+        <div class="tile-badge badge-orange">METRICS</div>
+      </div>
+      <div class="tile-kpi">
+        <div class="kpi-value" style="color:var(--orange)">12.4<span style="font-size:16px">%</span></div>
+        <div class="kpi-unit">Attrition</div>
+      </div>
+      <div class="tile-comps">
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Month</span>
+          <span class="comp-val down">↓ 0.7%</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-label">vs Prior Year</span>
+          <span class="comp-val down">↓ 1.8%</span>
+        </div>
+      </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--slate);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Bench FTE</div>
+        <div style="font-size:20px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text)">1,124</div>
+        <div style="font-size:11px;color:var(--red);font-weight:600;margin-top:2px;">↓ 265 vs Prior Mo.</div>
+      </div>
+    </div>
+
+  </div><!-- end row 3 -->
+
+</div><!-- end main -->
+
+<div class="page-footer">
+  FTE Summary Dashboard &nbsp;·&nbsp; Data as of Feb 2026 &nbsp;·&nbsp; Insight Compass | FP&A
+</div>
+
+<script>
+  const now = new Date();
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const d = `${String(now.getDate()).padStart(2,'0')}-${months[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`;
+  document.getElementById('headerDate').textContent = d;
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+  document.getElementById('headerDateSmall').textContent = `As of ${dd}/${mm}/${yyyy}`;
+</script>
+
+</body>
+</html>
